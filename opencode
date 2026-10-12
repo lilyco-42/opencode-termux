@@ -1,0 +1,19 @@
+#!/data/data/com.termux/files/usr/bin/sh
+# opencode launcher for Termux + glibc (termux-glibc).
+#
+# The opencode binary is built against glibc, so it must be started through the
+# glibc loader (ld-linux-aarch64.so.1). The library search path is passed to the
+# loader with --library-path instead of exporting LD_LIBRARY_PATH:
+#
+#   * exporting LD_LIBRARY_PATH leaked into every child process, so when
+#     opencode spawned the (bionic) user shell it resolved `libc.so` from the
+#     glibc directory. That file is a GNU ld *linker script* ("/* GNU ld
+#     script ... */"), which Android's linker cannot parse, producing:
+#         CANNOT LINK EXECUTABLE ".../zsh": ".../glibc/lib/libc.so" has bad ELF magic
+#   * --library-path applies only to this process tree entry point and is not
+#     placed in the environment, so children keep a clean, bionic-friendly env.
+unset LD_PRELOAD
+unset LD_LIBRARY_PATH
+exec /data/data/com.termux/files/usr/glibc/lib/ld-linux-aarch64.so.1 \
+    --library-path /data/data/com.termux/files/usr/glibc/lib \
+    "$HOME/.opencode/bin/opencode" "$@"
